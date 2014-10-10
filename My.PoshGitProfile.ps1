@@ -1,6 +1,6 @@
 Push-Location (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent)
 
-# Load posh-git module from current directory
+# Load posh-git module
 Import-Module 'C:\tools\poshgit\dahlbyk-posh-git-95df787\posh-git.psm1'
 
 Enable-GitColors
