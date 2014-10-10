@@ -14,3 +14,10 @@ function prompt
     Write-Host ("Shaun>") -nonewline -foregroundcolor White
     return " "
 }
+
+# Helper functions
+
+function firefox 
+{
+  Start-Process firefox.exe
+}
