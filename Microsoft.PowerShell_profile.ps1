@@ -19,5 +19,5 @@ function prompt
 
 function firefox 
 {
-  Start-Process firefox.exe
+  Start-Process firefox.exe;
 }
