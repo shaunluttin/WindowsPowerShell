@@ -64,5 +64,21 @@ $env:path += ";" + (Get-Item "Env:ProgramFiles(x86)").Value + "\Git\bin"
 # Load my posh-git profile using the dot-source notation
 . 'C:\Users\BigFont\Documents\WindowsPowerShell\My.PoshGitProfile.ps1'
 
+<<<<<<< HEAD
 # Load Posh-GitHub
 . 'C:\Users\BigFont\Documents\WindowsPowerShell\Modules\Posh-GitHub\Posh-GitHub-Profile.ps1'
+=======
+# Customize the prompt
+function prompt
+{
+   Write-Host ("Shaun>") -nonewline -foregroundcolor White
+   return " "
+}
+
+# Helper functions
+
+function firefox 
+{
+  Start-Process firefox.exe
+}
+>>>>>>> e46f1813ff757eddc2fa9a4fd59b7fc4a1c0304e
