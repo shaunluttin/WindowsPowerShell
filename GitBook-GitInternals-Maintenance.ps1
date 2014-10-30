@@ -1,4 +1,4 @@
-﻿
+﻿cd..
 # maintenance
 cls
 git gc --auto
