@@ -1,11 +1,14 @@
+# Add the git SSH agent to the PATH to avoid "could not find ssh-agent"
+$env:path += ";" + (Get-Item "Env:ProgramFiles(x86)").Value + "\Git\bin"
+
 Push-Location (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent)
 
 # Load posh-git module
-Import-Module 'C:\tools\poshgit\dahlbyk-posh-git-95df787\posh-git.psm1'
+Import-Module posh-git
 
 Enable-GitColors
 Pop-Location
-Start-SshAgent -Quiet
+Start-SshAgent -Quiet # Start-SshAgent is part of the posh-git module
 
 $GitPromptSettings.EnableFileStatus = $false # speed up git
 

@@ -22,18 +22,18 @@ $ui = $HOST.UI.RawUI;
 $ui.ForegroundColor = 'Yellow';
 
 $size = $ui.WindowSize
-$size.Width = 105;
-$size.Height = 35;
-$ui.WindowSize = $size;
+#$size.Width = 105;
+#$size.Height = 35;
+#$ui.WindowSize = $size;
 
 # the buffer size must exceed the window size
 $buffer = $ui.BufferSize;
-$buffer.Width = 105;
-$buffer.Height = 2000;
+# $buffer.Width = 105;
+# $buffer.Height = 2000;
 $ui.BufferSize = $buffer;
 
-$ui.WindowPosition.x = 0;
-$ui.WindowPosition.y = 0;
+# $ui.WindowPosition.x = 0;
+# $ui.WindowPosition.y = 0;
 
 #
 # Emulate 'run' behavior with most programs
@@ -55,14 +55,5 @@ $env:PATH += ';' + ($appPaths -join ';')
 # Posh Git
 # -------------------------
 
-# Add the git SSH agent to the PATH to avoid "could not find ssh-agent"
-$env:path += ";" + (Get-Item "Env:ProgramFiles(x86)").Value + "\Git\bin"
-
-# Load posh-git example profile
-# . 'C:\tools\poshgit\dahlbyk-posh-git-95df787\profile.example.ps1'
-
 # Load my posh-git profile using the dot-source notation
 . 'C:\Users\BigFont\Documents\WindowsPowerShell\My.PoshGitProfile.ps1'
-
-# Load Posh-GitHub
-. 'C:\Users\BigFont\Documents\WindowsPowerShell\Modules\Posh-GitHub\Posh-GitHub-Profile.ps1'
