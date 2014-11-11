@@ -17,20 +17,20 @@ function prompt
    return " "
 }
 
-# customize colors
-$ui = $HOST.UI.RawUI;
-$ui.ForegroundColor = 'Yellow';
+# customize shell
+# $ui = $HOST.UI.RawUI;
+# $ui.ForegroundColor = 'Yellow';
 
-$size = $ui.WindowSize
-#$size.Width = 105;
-#$size.Height = 35;
-#$ui.WindowSize = $size;
+# $size = $ui.WindowSize
+# $size.Width = 105;
+# $size.Height = 35;
+# $ui.WindowSize = $size;
 
 # the buffer size must exceed the window size
-$buffer = $ui.BufferSize;
+# $buffer = $ui.BufferSize;
 # $buffer.Width = 105;
 # $buffer.Height = 2000;
-$ui.BufferSize = $buffer;
+# $ui.BufferSize = $buffer;
 
 # $ui.WindowPosition.x = 0;
 # $ui.WindowPosition.y = 0;

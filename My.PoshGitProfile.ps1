@@ -12,7 +12,7 @@ Start-SshAgent -Quiet # Start-SshAgent is part of the posh-git module
 
 $GitPromptSettings.EnableFileStatus = $false # speed up git
 
-git config --global color.status.changed "cyan normal bold"
-git config --global color.status.untracked "cyan normal bold"
-$GitPromptSettings.WorkingForegroundColor    = [ConsoleColor]::Yellow
-$GitPromptSettings.UntrackedForegroundColor  = [ConsoleColor]::Yellow
+# git config --global color.status.changed "cyan normal bold"
+# git config --global color.status.untracked "cyan normal bold"
+# $GitPromptSettings.WorkingForegroundColor    = [ConsoleColor]::Yellow
+# $GitPromptSettings.UntrackedForegroundColor  = [ConsoleColor]::Yellow
