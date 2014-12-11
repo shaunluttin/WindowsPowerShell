@@ -1,3 +1,4 @@
 Test one.
 Test two.
 Test three - from submodule.
+Test four - from submodule.
