@@ -17,7 +17,7 @@ function prompt
    return " "
 }
 
-# customize shell
+# customize shell - note: it's hard to make this cooperate with git colors
 # $ui = $HOST.UI.RawUI;
 # $ui.ForegroundColor = 'Yellow';
 
