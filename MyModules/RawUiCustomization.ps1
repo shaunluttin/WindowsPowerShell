@@ -9,13 +9,6 @@
 # See windowsitpro.com/powershell/powershell-basics-console-configuration
 # -------------------------
 
-# Customize the prompt
-function prompt
-{
-   Write-Host ("Shaun>") -nonewline -foregroundcolor Yellow
-   return " "
-}
-
 # customize shell - note: it's hard to make this cooperate with git colors
 # $ui = $HOST.UI.RawUI;
 # $ui.ForegroundColor = 'Yellow';

@@ -12,5 +12,9 @@ $appPaths = Get-ChildItem $regkey |
   % { [Environment]::ExpandEnvironmentVariables($_.TrimStart('"')) } |
   select -Unique
 
+# clear path
+# add chocolaty
+# add most other apps
 $env:PATH = '';
+$env:PATH = 'C:\ProgramData\chocolatey\bin';
 $env:PATH += ';' + ($appPaths -join ';')

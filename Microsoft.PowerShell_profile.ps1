@@ -1,8 +1,11 @@
 
 Write-Host "Loading MyModules..."
+Push-Location ~\Documents\WindowsPowerShell\MyModules
 
-. ~\Documents\WindowsPowerShell\MyModules\EmulateRun.ps1
-. ~\Documents\WindowsPowerShell\MyModules\My.PoshGitProfile.ps1
-. ~\Documents\WindowsPowerShell\MyModules\RawUiCustomization.ps1
- 
+.\EmulateRun.ps1
+.\My.PoshGitProfile.ps1
+.\RawUiCustomization.ps1
+.\CustomPrompt.ps1
+
+Pop-Location
 Write-Host "Done"
