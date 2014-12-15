@@ -17,4 +17,5 @@ $appPaths = Get-ChildItem $regkey |
 # add most other apps
 $env:PATH = '';
 $env:PATH = 'C:\ProgramData\chocolatey\bin';
+$env:PATH = 'C:\chocolatey\bin';
 $env:PATH += ';' + ($appPaths -join ';')
