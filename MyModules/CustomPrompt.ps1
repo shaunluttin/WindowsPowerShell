@@ -3,7 +3,8 @@
 function global:prompt
 {
    # get the current dir
-   $array = (Get-Location).Path.TrimEnd('\').Split('\');
+   $array = (location).Path.TrimEnd('\').Split('\');
+
    $currentDir = $array[$array.Length - 1];
 
    # add it to the prompt
