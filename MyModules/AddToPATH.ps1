@@ -2,6 +2,15 @@
 # Emulate 'run' behavior with most programs
 # -------------------------
 
+function addToPath($dir)
+{
+  if($env:Path -notlike "*$dir*")
+  {
+    Write-Host "Adding to PATH: $dir";
+    $env:Path += ";" + $dir;
+  }
+}
+
 $regkey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths'
 
 $appPaths = Get-ChildItem $regkey |
@@ -12,10 +21,8 @@ $appPaths = Get-ChildItem $regkey |
   % { [Environment]::ExpandEnvironmentVariables($_.TrimStart('"')) } |
   select -Unique
 
-# clear path
 # add chocolaty
+addToPath('C:\ProgramData\chocolatey\bin')
+
 # add most other apps
-$env:PATH = '';
-$env:PATH = 'C:\ProgramData\chocolatey\bin';
-$env:PATH = 'C:\chocolatey\bin';
-$env:PATH += ';' + ($appPaths -join ';')
+$appPaths | %{ addToPath($_) }
