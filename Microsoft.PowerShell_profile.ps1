@@ -1,5 +1,8 @@
 
 Write-Host "Loading MyModules..."
+
+# Run these
+
 Push-Location ~\Documents\WindowsPowerShell\MyModules
 
 .\AddToPATH.ps1
@@ -7,7 +10,11 @@ Push-Location ~\Documents\WindowsPowerShell\MyModules
 .\PoshGitProfile.ps1
 .\RawUiCustomization.ps1
 .\CustomPrompt.ps1
-.\NoHistory.ps1
 
 Pop-Location
+
+# Load these
+
+. ~\Documents\WindowsPowerShell\MyModules\NoHistory.ps1
+
 Write-Host "Done"
