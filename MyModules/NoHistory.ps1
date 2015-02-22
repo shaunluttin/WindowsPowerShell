@@ -6,7 +6,7 @@ param(
         $history = Get-History
     }
 
-    Process {}
+    Process { $obj }
 
     End {
         Clear-History
