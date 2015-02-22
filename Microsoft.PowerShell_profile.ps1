@@ -1,9 +1,9 @@
 
-Write-Host "Loading MyModules..."
+Write-Host "Loading MyScripts..."
 
-# Run these
+# Run
 
-Push-Location ~\Documents\WindowsPowerShell\MyModules
+Push-Location ~\Documents\WindowsPowerShell\MyScripts
 
 .\AddToPATH.ps1
 .\Aliases.ps1
@@ -13,8 +13,8 @@ Push-Location ~\Documents\WindowsPowerShell\MyModules
 
 Pop-Location
 
-# Load these
+# Load
 
-. ~\Documents\WindowsPowerShell\MyModules\NoHistory.ps1
+Import-Module History
 
 Write-Host "Done"
