@@ -7,6 +7,7 @@ Push-Location ~\Documents\WindowsPowerShell\MyModules
 .\PoshGitProfile.ps1
 .\RawUiCustomization.ps1
 .\CustomPrompt.ps1
+.\NoHistory.ps1
 
 Pop-Location
 Write-Host "Done"
