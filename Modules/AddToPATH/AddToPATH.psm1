@@ -16,7 +16,8 @@ $regkey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths'
 $appPaths = Get-ChildItem $regkey |
   Get-ItemProperty |
   ? { $_.'(default)' } |
-  select -Expand '(default)' |
+  select -Expand '(default)'
+  % { $_.TrimStart("`"") } |
   Split-Path -Parent |
   % { [Environment]::ExpandEnvironmentVariables($_.TrimStart('"')) } |
   select -Unique
