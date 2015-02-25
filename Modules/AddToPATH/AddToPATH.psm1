@@ -17,7 +17,7 @@ $appPaths = Get-ChildItem $regkey |
   Get-ItemProperty |
   ? { $_.'(default)' } |
   select -Expand '(default)'
-  % { $_.TrimStart("`"") } |
+  % { if($_) $_.TrimStart("`"").TrimEnd("`"") } |
   Split-Path -Parent |
   % { [Environment]::ExpandEnvironmentVariables($_.TrimStart('"')) } |
   select -Unique
