@@ -1,3 +1,0 @@
-[submodule "modules/posh-git"]
-	path = Modules/posh-git
-	url = https://github.com/dahlbyk/posh-git.git
