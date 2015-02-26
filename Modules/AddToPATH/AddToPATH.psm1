@@ -11,19 +11,27 @@ function addToPath($dir)
   }
 }
 
-$regkey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths'
+$regkeys = @( 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths' )
 
-$appPaths = Get-ChildItem $regkey |
-  Get-ItemProperty |
-  ? { $_.'(default)' } |
-  select -Expand '(default)'
-  % { if($_) $_.TrimStart("`"").TrimEnd("`"") } |
-  Split-Path -Parent |
-  % { [Environment]::ExpandEnvironmentVariables($_.TrimStart('"')) } |
-  select -Unique
+$appPaths = "";
 
-# add chocolaty
+foreach($regkey in $regkeys)
+{
+
+    $appPaths += Get-ChildItem $regkey |
+      Get-ItemProperty |
+      ? { $_.'(default)' } |
+      select -Expand '(default)'
+      % { if($_) { $_.TrimStart("`"").TrimEnd("`"") }} |
+      Split-Path -Parent |
+      % { [Environment]::ExpandEnvironmentVariables($_.TrimStart('"')) } |
+      select -Unique
+}
+
+
+# add some manually
 addToPath('C:\ProgramData\chocolatey\bin')
+addToPath('C:\Program Files (x86)\vim\vim74')
 
 # add most other apps
 $appPaths | %{ addToPath($_) }
