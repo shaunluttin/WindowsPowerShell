@@ -13,17 +13,17 @@ function addToPath($dir)
 
 $regkeys = @( 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths' )
 
-$appPaths = "";
+$appPaths = @();
 
 foreach($regkey in $regkeys)
 {
 
     $appPaths += Get-ChildItem $regkey |
       Get-ItemProperty |
-      ? { $_.'(default)' } |
-      select -Expand '(default)'
+      Where-Object { $_.'(default)' } |
+      select -Expand '(default)' |
       % { if($_) { $_.TrimStart("`"").TrimEnd("`"") }} |
-      Split-Path -Parent |
+      Split-Path -Parent  |
       % { [Environment]::ExpandEnvironmentVariables($_.TrimStart('"')) } |
       select -Unique
 }
@@ -32,6 +32,7 @@ foreach($regkey in $regkeys)
 # add some manually
 addToPath('C:\ProgramData\chocolatey\bin')
 addToPath('C:\Program Files (x86)\vim\vim74')
+addToPath('C:\WINDOWS\Microsoft.NET\Framework64\v4.0.30319') #include MSBuild
 
 # add most other apps
-$appPaths | %{ addToPath($_) }
+$appPaths | % { addToPath($_) }

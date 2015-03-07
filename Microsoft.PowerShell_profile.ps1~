@@ -1,7 +1,7 @@
 
 Write-Host "Loading MyScripts..."
 
-$env:SVN_EDITOR = "vim"
+$env:SVN_EDITOR "vim"
 
 Import-Module CustomPrompt
 Import-Module Aliases
