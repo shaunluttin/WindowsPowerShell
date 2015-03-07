@@ -1,4 +1,7 @@
 
+# Example
+# Get-WikipediaRegionDesc -region "vancouver"
+
 function Get-WikipediaRegionDesc ($region)
 {
 
@@ -32,6 +35,5 @@ function Get-WikipediaRegionDesc ($region)
    
    
    "`n" + $result + "`n`n" + $url + "`n`n";
-
 
 }
