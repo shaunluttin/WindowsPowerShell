@@ -11,24 +11,21 @@ function Get-WikipediaRegionDescFromCsvFile ($file)
     $source = (get-item $file).BaseName;
     $destination = "wikipedia-descriptions-$source-$timestamp.csv";
 
-
     try
     {
-        Import-Csv $file | 
-            # Select-Object -first 3 |
+        Import-Csv $file |             
             Select-Object name | 
             ForEach-Object {
-                Write-Host $_.name;
+                Write-Host "Searching Wikipedia for" $_.name;
                 Get-WikipediaRegionDesc $_.name;
             } | 
             Select-Object RegionName, Url, Description, ShortDescription |
             ForEach-Object { 
                 Export-Csv -InputObject $_ -Path $destination -Append -NoTypeInformation;
-                $index += 1; 
+                $index += 1;
             }
 
        Write-Host "Wrote $($index) entries to $($destination)."
-    
     }
     catch
     {
