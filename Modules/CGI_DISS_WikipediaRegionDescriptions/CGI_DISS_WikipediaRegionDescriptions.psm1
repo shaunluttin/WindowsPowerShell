@@ -125,7 +125,9 @@ function Get-DescriptionFromWikipediaUrl ($url)
             Select-Object -expand allelements | 
             Where-Object { $_.id -eq "mw-content-text" } | 
             Select-Object -expand innerHTML | 
-            ForEach-Object {              
+            ForEach-Object {  
+            
+                $html = Remove-TablesFromHtml $_;            
 
                 $i = $_.IndexOf("<P>"); 
                 $j = $_.IndexOf("</P>");                
@@ -168,4 +170,41 @@ function Get-DescriptionFromWikipediaUrl ($url)
     }
 
     return $desc;
+}
+
+function Remove-TablesFromHtml ($theInput)
+{
+    try
+    {
+        $html = $theInput.ToLower();
+
+        $tagStart = "<table";
+        $tagEnd = "</table>";
+
+        $continue = $true;
+        while($continue)
+        {
+            $start = $html.IndexOf($tagStart);
+            $end = $html.IndexOf($tagEnd) + $tagEnd.Length
+            $count = $end - $start;
+
+            if($start -gt 0 -and $count -gt 0)
+            {
+                $html = $html.remove($start, $count);
+            }
+            else
+            {
+                $continue = $false;
+            }
+        }   
+    }
+    catch
+    {
+        Write-Host $_.Exception.ToString()
+    }
+
+    Write-Host $html;
+    Read-Host;
+
+    return $html;
 }
