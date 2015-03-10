@@ -24,7 +24,6 @@ function Get-WikipediaRegionDescFromCsvFile ($file)
             Select-Object RegionName, Url, Description, ShortDescription |
             ForEach-Object { 
                 Export-Csv -InputObject $_ -Path $destination -Append -NoTypeInformation;
-                Write-Host "`tComplete";
                 $index += 1; 
             }
 
@@ -94,8 +93,17 @@ function Get-WikipediaUrlFromRegion ($region)
 {
     try
     {
-        $urlSegment = $region -replace " ", "_"
-        $url = "http://en.wikipedia.org/wiki/$($urlSegment),_British_Columbia";
+        $region = $region -replace " ", "_"
+        if($region -match "/")
+        {
+            $region = $region -replace "/", "-"
+            $region = "Regional_District_of_" + $region;
+        }
+        else
+        {
+            $region = $region + ",_British_Columbia";
+        }
+        $url = "http://en.wikipedia.org/wiki/$($region)";
     }
     catch
     {
@@ -111,6 +119,8 @@ function Get-DescriptionFromWikipediaUrl ($url)
 
     try
     {
+        Write-Host "`tTrying" $url;
+
         $desc = Invoke-WebRequest $url | 
             Select-Object -expand allelements | 
             Where-Object { $_.id -eq "mw-content-text" } | 
@@ -121,15 +131,35 @@ function Get-DescriptionFromWikipediaUrl ($url)
                 $j = $_.IndexOf("</P>");                
                 
                 $_.Substring($i, $j - $i) -replace $regex.htmlTags -replace $regex.footnotes -replace $regex.firstNations -replace $regex.parentheses -replace $regex.htmlEntities
-            }    
+            }   
+            
+        Write-Host "`tSuccess" 
     }
     catch [System.Net.WebException]
     {
-        Write-Host "`tNotFound" $url
+        $regionalPrefix = "Regional_District_of_";
+        $regionalSuffix = "_Regional_District";
+
         if($url -match "_British_Columbia")
         {
-            $urlWithoutProvince = $url -replace ",_British_Columbia";
-            $desc = Get-DescriptionFromWikipediaUrl $urlWithoutProvince;
+            $url = $url -replace ",_British_Columbia";
+            $desc = Get-DescriptionFromWikipediaUrl $url;
+        }
+        elseif($url -notmatch $regionalPrefix)
+        {
+            $i = $url.LastIndexOf("/") + 1;
+            $url = $url.Insert($i, $regionalPrefix);
+            $desc = Get-DescriptionFromWikipediaUrl $url;
+        }
+        elseif($url -match $regionalPrefix)
+        {
+            $url = $url -replace $regionalPrefix;
+            $url = $url + $regionalSuffix;
+            $desc = Get-DescriptionFromWikipediaUrl $url;
+        }
+        else
+        {
+            Write-Host "`tBummer"
         }
     }
     catch
