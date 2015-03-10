@@ -67,10 +67,6 @@ function Get-WikipediaDescriptionForRegion ($region)
         if($webResponse.StatusCode -eq 200) {
             $description = Get-DescriptionFromWebResponse $webResponse;
         }
-        else
-        {
-            Read-Host
-        }
 
         # create hash table
         if($description)
@@ -108,7 +104,28 @@ function Convert-RegionToWikipediaUrl ($region, $counter)
 {
     $baseUrl = "http://en.wikipedia.org/wiki/";
 
-    $modifiers = @(",_British_Columbia", "Regional_District_of_", "_Regional_District");
+    # wikipedia replaces spaces with underscores
+    $region = $region -replace " ", "_"
+
+    <#  Wikipedia uses several styles of URL for our target regions.
+        We try several and accept whichever works first (sometimes these work because of redirects too.)
+    
+        ./wiki/OUR_TARGET_REGION
+        ./wiki/OUR_TARGET_REGION,_British_Columbia
+        ./wiki/OUR_TARGET_REGION,_British_Columbia_(district_municipality)
+        ./wiki/OUR_TARGET_REGION,_British_Columbia_(city)
+        ./wiki/Regional_District_of_OUR_TARGET_REGION
+        ./wiki/OUR_TARGET_REGION_Regional_District
+        .wiki/OUR_TARGET_REGION_Regional_Municipality
+
+    #>
+
+    $modifiers = @();
+    $modifiers[0] = ",_British_Columbia"
+    $modifiers[1] = "Regional_District_of_"
+    $modifiers[2] = "_Regional_District"
+    $modifiers[3] = [string]::Empty
+    $modifiers[4] = "_Regional_Municipality";
 
     if($counter -eq $modifiers.Length)
     {
@@ -126,6 +143,12 @@ function Convert-RegionToWikipediaUrl ($region, $counter)
             }
             2 {
                 $url = $baseUrl + $region + $modifiers[$counter];
+            }
+            3 {
+                $url = $baseUrl + $region;
+            }
+            4 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
             }
         }
     }
