@@ -1,4 +1,8 @@
 
+
+$global:SuccessfulUrls = @();
+
+
 # Example
 # dir .\tradebc_community.csv | % { Get-WikipediaDescriptionsFromCsvFile $_ }
 
@@ -66,6 +70,7 @@ function Get-WikipediaDescriptionForRegion ($region)
 
         if($webResponse.StatusCode -eq 200) {
             $description = Get-DescriptionFromWebResponse $webResponse;
+            $global:SuccessfulUrls += $url;
         }
 
         # create hash table
@@ -100,6 +105,8 @@ function Get-WikipediaDescriptionForRegion ($region)
 
 }
 
+# TODO Keep track of URLs that we've already tried
+
 function Convert-RegionToWikipediaUrl ($region, $counter)
 {
     $baseUrl = "http://en.wikipedia.org/wiki/";
@@ -120,14 +127,17 @@ function Convert-RegionToWikipediaUrl ($region, $counter)
 
     #>
 
-    $modifiers = @();
-    $modifiers += ",_British_Columbia"
-    $modifiers += "Regional_District_of_"
-    $modifiers += "_Regional_District"
-    $modifiers += [string]::Empty
-    $modifiers += "_Regional_Municipality";
-    $modifiers += "_(district_municipality)";
-    $modifiers += "_(city)";
+    $modifiers = [Array]::CreateInstance("string", 9);
+    $modifiers[0] = ",_British_Columbia"
+    $modifiers[1] = "Regional_District_of_"
+    $modifiers[2] = "_Regional_District"
+    $modifiers[3] = [string]::Empty
+    $modifiers[4] = "_Regional_Municipality";
+    $modifiers[5] = "_(district_municipality)";
+    $modifiers[6] = "_(city)";
+
+    $modifiers[7] = $modifiers[0] + $modifiers[5];
+    $modifiers[8] = $modifiers[0] + $modifiers[6];
 
     if($counter -eq $modifiers.Length)
     {
@@ -158,6 +168,14 @@ function Convert-RegionToWikipediaUrl ($region, $counter)
             6 {
                 $URL = $baseUrl + $region + $modifiers[$counter];
             }
+
+            7 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
+            8 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
+
         }
     }
     return $url;
