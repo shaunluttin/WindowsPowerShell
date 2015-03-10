@@ -304,8 +304,8 @@ function Remove-TablesFromHtml ($theInput)
 function Get-DescriptionParagraphsFromHtml ($html)
 {
     $desc = "";
-    $openIndex = 0;
-    $closeIndex = 0;
+    $openIndex = -1;
+    $closeIndex = -1;
 
     $openTag = "<P>";
     $closeTag = "</P>";
@@ -315,21 +315,23 @@ function Get-DescriptionParagraphsFromHtml ($html)
         $openIndex = $html.IndexOf($openTag, $closeIndex + 1); 
         $closeIndex = $html.IndexOf($closeTag, $openIndex + 1);
 
-        $pElement = $html.Substring($openIndex, $closeIndex + $closeTag.Length - $openIndex);
-
-        # avoid non-description paragraphs
-        if($pElement -match 'id=coordinates')
+        if($openIndex -ge 0 -and $closeIndex -ge 0)
         {
-            continue;
+            $pElement = $html.Substring($openIndex, $closeIndex + $closeTag.Length - $openIndex);
+
+            # avoid non-description paragraphs
+            if($pElement -match 'id=coordinates')
+            {
+                continue;
+            }
+
+            $desc += $pElement;
+
         }
-
-        $desc += $pElement;
-
     }
-    while ($desc.Length -lt 400)
+    while ($desc.Length -lt 400 -and $openIndex -ge 0 -and $closeIndex -ge 0)
 
     return $desc;
-    
 }
 
 function Remove-UnwantedStuffFromDesc ($desc)
