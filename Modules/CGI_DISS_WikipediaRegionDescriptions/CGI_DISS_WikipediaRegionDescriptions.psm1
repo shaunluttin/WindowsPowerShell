@@ -112,8 +112,8 @@ function Convert-RegionToWikipediaUrl ($region, $counter)
     
         ./wiki/OUR_TARGET_REGION
         ./wiki/OUR_TARGET_REGION,_British_Columbia
-        ./wiki/OUR_TARGET_REGION,_British_Columbia_(district_municipality)
-        ./wiki/OUR_TARGET_REGION,_British_Columbia_(city)
+        ./wiki/OUR_TARGET_REGION,(district_municipality)
+        ./wiki/OUR_TARGET_REGION,(city)
         ./wiki/Regional_District_of_OUR_TARGET_REGION
         ./wiki/OUR_TARGET_REGION_Regional_District
         .wiki/OUR_TARGET_REGION_Regional_Municipality
@@ -126,6 +126,8 @@ function Convert-RegionToWikipediaUrl ($region, $counter)
     $modifiers += "_Regional_District"
     $modifiers += [string]::Empty
     $modifiers += "_Regional_Municipality";
+    $modifiers += "_(district_municipality)";
+    $modifiers += "_(city)";
 
     if($counter -eq $modifiers.Length)
     {
@@ -150,6 +152,12 @@ function Convert-RegionToWikipediaUrl ($region, $counter)
             4 {
                 $URL = $baseUrl + $region + $modifiers[$counter];
             }
+            5 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
+            6 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
         }
     }
     return $url;
@@ -163,6 +171,14 @@ function Get-WikipediaWebResponseForUrl ($url)
     try
     {       
         $webResponse = Invoke-WebRequest $url;
+
+        # the disambiguation page means "keep going"
+        $IsDisambiguation = ($webResponse.Images | where { $_.outerHtml -match "disambiguation" } | Measure-Object).Count -gt 0;
+        if($IsDisambiguation)
+        {
+            $webResponse = @{ StatusCode = 404 }
+        }
+
     }
     catch [System.Net.WebException]
     {
