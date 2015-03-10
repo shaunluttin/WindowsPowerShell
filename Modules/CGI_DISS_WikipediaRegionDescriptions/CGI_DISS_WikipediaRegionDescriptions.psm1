@@ -1,8 +1,8 @@
 
 # Example
-# Get-WikipediaRegionDesc -region "tradebc_community.csv"
+# Get-WikipediaDescForRegionFromCsvFile "tradebc_community.csv"
 
-function Get-WikipediaRegionDescFromCsvFile ($file)
+function Get-WikipediaDescForEachRegion ($file)
 {
     write-host $file;
 
@@ -17,7 +17,7 @@ function Get-WikipediaRegionDescFromCsvFile ($file)
             Select-Object name | 
             ForEach-Object {
                 Write-Host "Searching Wikipedia for" $_.name;
-                Get-WikipediaRegionDesc $_.name;
+                Get-WikipediaDescForRegion $_.name;
             } | 
             Select-Object RegionName, Url, Description, ShortDescription |
             ForEach-Object { 
@@ -35,25 +35,16 @@ function Get-WikipediaRegionDescFromCsvFile ($file)
 
 
 # Example
-# Get-WikipediaRegionDesc -region "vancouver"
+# Get-WikipediaDescForRegion -region "vancouver"
 
-function Get-WikipediaRegionDesc ($region)
-{
-    $dir = "C:\Users\shaun.luttin\Documents\ProjectNotes\1415-TIBC-DISS-TA-0077\WikipediaRegions\Results\";
-  
-    $regex = @{};
-    $regex.htmlTags = '<[^>]+>';
-    $regex.footnotes = '\[\d{0,3}\]';
-    $regex.firstNations = '\/[^\/]+\/\s';
-    $regex.parentheses = '\([^\)]+\),?\s';
-    $regex.htmlEntities = '&[^\s]*;';
-  
+function Get-WikipediaDescForRegion ($region)
+{  
     try
     {
-        $url = Get-WikipediaUrlFromRegion $region
-        $description = Get-DescriptionFromWikipediaUrl $url
+        $url = Convert-RegionToWikipediaUrl $region
+        $description = Get-WikipediaDescForUrl $url
 
-        # create hash table of results
+        # create hash table
         if($description)
         {
             $results = @{
@@ -73,7 +64,6 @@ function Get-WikipediaRegionDesc ($region)
             }
         }
 
-
         # convert hash table to object
         $object = new-object psobject -Property $results
         return $object;
@@ -86,7 +76,7 @@ function Get-WikipediaRegionDesc ($region)
 
 }
 
-function Get-WikipediaUrlFromRegion ($region)
+function Convert-RegionToWikipediaUrl ($region)
 {
     try
     {
@@ -110,9 +100,16 @@ function Get-WikipediaUrlFromRegion ($region)
     return $url;
 }
 
-function Get-DescriptionFromWikipediaUrl ($url)
+function Get-WikipediaDescForUrl ($url)
 {
     $desc = "";
+
+    $regex = @{};
+    $regex.htmlTags = '<[^>]+>';
+    $regex.footnotes = '\[\d{0,3}\]';
+    $regex.firstNations = '\/[^\/]+\/\s';
+    $regex.parentheses = '\([^\)]+\),?\s';
+    $regex.htmlEntities = '&[^\s]*;';
 
     try
     {
@@ -129,7 +126,7 @@ function Get-DescriptionFromWikipediaUrl ($url)
                 $i = $_.IndexOf("<P>"); 
                 $j = $_.IndexOf("</P>");                
                 
-                $_.Substring($i, $j - $i) -replace $regex.htmlTags -replace $regex.footnotes -replace $regex.firstNations -replace $regex.parentheses -replace $regex.htmlEntities
+                Remove-UnwantedStuffFromDesc ($_, $regex);
             }   
             
         Write-Host "`tSuccess" 
@@ -142,19 +139,19 @@ function Get-DescriptionFromWikipediaUrl ($url)
         if($url -match "_British_Columbia")
         {
             $url = $url -replace ",_British_Columbia";
-            $desc = Get-DescriptionFromWikipediaUrl $url;
+            $desc = Get-WikipediaDescForUrl $url;
         }
         elseif($url -notmatch $regionalPrefix)
         {
             $i = $url.LastIndexOf("/") + 1;
             $url = $url.Insert($i, $regionalPrefix);
-            $desc = Get-DescriptionFromWikipediaUrl $url;
+            $desc = Get-WikipediaDescForUrl $url;
         }
         elseif($url -match $regionalPrefix)
         {
             $url = $url -replace $regionalPrefix;
             $url = $url + $regionalSuffix;
-            $desc = Get-DescriptionFromWikipediaUrl $url;
+            $desc = Get-WikipediaDescForUrl $url;
         }
         else
         {
@@ -171,37 +168,114 @@ function Get-DescriptionFromWikipediaUrl ($url)
 
 function Remove-TablesFromHtml ($theInput)
 {
+    $openTag = "<TABLE";
+    $closeTag = "</TABLE>";
+
+    $RESET = -1;
+
+    $openIndex = $RESET;
+    $closeIndex = $RESET;
+
+    $openTagCounter = 0;
+    $closeTagCounter = 0;
+
+    $index = $RESET;
+    $startIndex = $RESET;
+    $endIndex = $RESET;
+
     try
     {
-        $html = $theInput.ToLower();
-
-        $tagStart = "<table";
-        $tagEnd = "</table>";
-
+        $html = $theInput;        
         $continue = $true;
         while($continue)
-        {
-            $start = $html.IndexOf($tagStart);
-            $end = $html.IndexOf($tagEnd) + $tagEnd.Length
-            $count = $end - $start;
-
-            if($start -gt 0 -and $count -gt 0)
+        {   
+            $remainingOpenTags = ($html | select-string $openTag -allmatch).Matches.Count;
+            $remainingCloseTags = ($html | select-string $closeTag -allmatch).Matches.Count;
+            
+            # get the smaller of the two indexes 
+            # as starting points for the IndexOf 
+            if($openIndex -le $closeIndex)
             {
-                $html = $html.remove($start, $count);
+                $index = $openIndex;
             }
             else
             {
+                $index = $closeIndex;
+            }
+            
+            
+            # do another IndexOf
+            $o = $html.IndexOf($openTag, $index + 1);
+            if($o -ge 0) {
+                $openIndex = $o;
+            }
+            
+            $e = $html.IndexOf($closeTag, $index + 1);
+            if($e -ge 0) {
+                $closeIndex = $e;
+            }
+            
+            # determine which one is smaller and count it
+            if($openIndex -le $closeIndex)
+            {
+                if($openTagCounter -eq 0)
+                {
+                    $startIndex = $openIndex;
+                }
+                $openTagCounter += 1;
+            }
+            else
+            {
+                $closeTagCounter += 1;
+            }  
+            
+            # short circuit if we have maxed out on open tags
+            if($remainingOpenTags -eq $openTagCounter)
+            {   
+                $startIndex = $html.IndexOf($openTag);
+                $closeIndex = $html.LastIndexOf($closeTag);
+                                   
+                $openTagCounter = $RESET;
+                $closeTagCounter = $RESET;
+            }
+            
+            # check whether we have the same number
+            # of closing and opening tags
+            if($openTagCounter -eq $closeTagCounter)
+            {
+                $endIndex = $closeIndex + $closeTag.Length;
+                $count = $endIndex - $startIndex;
+                
+                $html = $html.Remove($startIndex, $count);
+                 
+                # reset - let's do it all again
+                $openIndex = $RESET;
+                $closeIndex = $RESET;
+
+                $openTagCounter = 0;
+                $closeTagCounter = 0;
+
+                $index = $RESET;
+                $startIndex = $RESET;
+                $endIndex = $RESET;    
+            }
+            
+            if($remainingOpenTags + $remainingCloseTags -eq 0)
+            {
                 $continue = $false;
             }
-        }   
+        }
+        
+        $html;
+        return;
     }
     catch
     {
         Write-Host $_.Exception.ToString()
     }
+}
 
-    Write-Host $html;
-    Read-Host;
-
-    return $html;
+function Remove-UnwantedStuffFromDesc ($desc, $regex)
+{
+    $_.Substring($i, $j - $i) -replace $regex.htmlTags -replace $regex.footnotes -replace $regex.firstNations -replace $regex.parentheses -replace $regex.htmlEntities
 }
