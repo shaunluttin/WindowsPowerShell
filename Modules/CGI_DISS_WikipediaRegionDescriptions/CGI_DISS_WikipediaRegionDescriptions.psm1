@@ -121,11 +121,11 @@ function Convert-RegionToWikipediaUrl ($region, $counter)
     #>
 
     $modifiers = @();
-    $modifiers[0] = ",_British_Columbia"
-    $modifiers[1] = "Regional_District_of_"
-    $modifiers[2] = "_Regional_District"
-    $modifiers[3] = [string]::Empty
-    $modifiers[4] = "_Regional_Municipality";
+    $modifiers += ",_British_Columbia"
+    $modifiers += "Regional_District_of_"
+    $modifiers += "_Regional_District"
+    $modifiers += [string]::Empty
+    $modifiers += "_Regional_Municipality";
 
     if($counter -eq $modifiers.Length)
     {
@@ -186,11 +186,9 @@ function Get-DescriptionFromWebResponse ($webResponse)
             
             $htmlWithoutTables = Remove-TablesFromHtml $_;            
 
-            $i = $htmlWithoutTables.IndexOf("<P>"); 
-            $j = $htmlWithoutTables.IndexOf("</P>");       
-                
-            $desc = $htmlWithoutTables.Substring($i, $j - $i);
-            Test-UnwantedStuffFromDesc ($desc);
+            $desc = Get-DescriptionParagraphsFromHtml $htmlWithoutTables;
+
+            Remove-UnwantedStuffFromDesc ($desc);
         }
 }
 
@@ -301,6 +299,37 @@ function Remove-TablesFromHtml ($theInput)
     {
         Write-Host $_.Exception.ToString()
     }
+}
+
+function Get-DescriptionParagraphsFromHtml ($html)
+{
+    $desc = "";
+    $openIndex = 0;
+    $closeIndex = 0;
+
+    $openTag = "<P>";
+    $closeTag = "</P>";
+
+    do {
+    
+        $openIndex = $html.IndexOf($openTag, $closeIndex + 1); 
+        $closeIndex = $html.IndexOf($closeTag, $openIndex + 1);
+
+        $pElement = $html.Substring($openIndex, $closeIndex + $closeTag.Length - $openIndex);
+
+        # avoid non-description paragraphs
+        if($pElement -match 'id=coordinates')
+        {
+            continue;
+        }
+
+        $desc += $pElement;
+
+    }
+    while ($desc.Length -lt 400)
+
+    return $desc;
+    
 }
 
 function Remove-UnwantedStuffFromDesc ($desc)
