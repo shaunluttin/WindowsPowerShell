@@ -4,18 +4,27 @@
 
 function Get-WikipediaRegionDescFromCsvFile ($file)
 {
+    write-host $file;
+
     $index = 0;
-    $destination = "wikipedia-descriptions.csv";
+    $timestamp = (get-date -f yyyy-MMM-dd-hhhh-mmmm);
+    $source = (get-item $file).BaseName;
+    $destination = "wikipedia-descriptions-$source-$timestamp.csv";
+
 
     try
     {
         Import-Csv $file | 
             # Select-Object -first 3 |
             Select-Object name | 
-            ForEach-Object { Get-WikipediaRegionDesc $_.name } | 
+            ForEach-Object {
+                Write-Host $_.name;
+                Get-WikipediaRegionDesc $_.name;
+            } | 
+            Select-Object RegionName, Url, Description, ShortDescription |
             ForEach-Object { 
-                Export-Csv -InputObject $_ -Path $destination -append;
-                Write-Host $_.RegionName "Complete";
+                Export-Csv -InputObject $_ -Path $destination -Append -NoTypeInformation;
+                Write-Host "`tComplete";
                 $index += 1; 
             }
 
@@ -48,11 +57,26 @@ function Get-WikipediaRegionDesc ($region)
         $url = Get-WikipediaUrlFromRegion $region
         $description = Get-DescriptionFromWikipediaUrl $url
 
-        $results = @{
-            RegionName = $region
-            Description = $description
-            ShortDescription = $description.PadRight(380).Substring(0, 380)
+        # create hash table of results
+        if($description)
+        {
+            $results = @{
+                RegionName = $region
+                Url = $url
+                Description = $description
+                ShortDescription = $description.PadRight(380).Substring(0, 380)                
+            }
         }
+        else
+        {
+            $results = @{
+                RegionName = $region
+                Url = $url
+                Description = "Not found in wikipedia"
+                ShortDescription = "Not found in wikipedia"                
+            }
+        }
+
 
         # convert hash table to object
         $object = new-object psobject -Property $results
@@ -83,21 +107,30 @@ function Get-WikipediaUrlFromRegion ($region)
 
 function Get-DescriptionFromWikipediaUrl ($url)
 {
+    $desc = "";
+
     try
     {
         $desc = Invoke-WebRequest $url | 
             Select-Object -expand allelements | 
             Where-Object { $_.id -eq "mw-content-text" } | 
             Select-Object -expand innerHTML | 
-            ForEach-Object { 
+            ForEach-Object {              
+
                 $i = $_.IndexOf("<P>"); 
-                $j = $_.IndexOf("</P>"); 
+                $j = $_.IndexOf("</P>");                
+                
                 $_.Substring($i, $j - $i) -replace $regex.htmlTags -replace $regex.footnotes -replace $regex.firstNations -replace $regex.parentheses -replace $regex.htmlEntities
             }    
     }
     catch [System.Net.WebException]
     {
-        Write-Host $url " not found"
+        Write-Host "`tNotFound" $url
+        if($url -match "_British_Columbia")
+        {
+            $urlWithoutProvince = $url -replace ",_British_Columbia";
+            $desc = Get-DescriptionFromWikipediaUrl $urlWithoutProvince;
+        }
     }
     catch
     {
