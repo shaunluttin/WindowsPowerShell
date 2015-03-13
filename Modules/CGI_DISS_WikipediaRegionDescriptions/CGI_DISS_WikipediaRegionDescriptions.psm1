@@ -19,13 +19,19 @@ function Get-WikipediaDescriptionsFromCsvFile
     try
     {
         Import-Csv $file |             
-            Select-Object name | 
+            Select-Object name, originalid | 
             ForEach-Object {
                 Write-Host "Retrieving Wikipedia description for" $_.name;
-                Get-WikipediaDescriptionForRegion $_.name;
+                
+                $dto = Get-WikipediaDescriptionForRegion $_.name;                
+                $dto.OriginalId = $_.originalid;
+
+                return $dto;
+
             } | 
-            Select-Object RegionName, Url, Description, ShortDescription |
+            Select-Object OriginalId, RegionName, Url, Description, ShortDescription |
             ForEach-Object { 
+                
                 Export-Csv -InputObject $_ -Path $destination -Append -NoTypeInformation;
                 $counter += 1;
             }
@@ -77,6 +83,7 @@ function Get-WikipediaDescriptionForRegion ($region)
         if($description)
         {
             $results = @{
+                OriginalId = ""
                 RegionName = $region
                 Url = $url
                 Description = $description
@@ -86,6 +93,7 @@ function Get-WikipediaDescriptionForRegion ($region)
         else
         {
             $results = @{
+                OriginalId = ""
                 RegionName = $region
                 Url = $url
                 Description = "Not found in wikipedia"
