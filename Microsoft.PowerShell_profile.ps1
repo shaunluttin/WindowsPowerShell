@@ -10,4 +10,6 @@ Import-Module PSGet
 Import-Module AddToPATH
 Import-Module Posh-Git
 
+Start-SshAgent
+
 Write-Host "Done"
