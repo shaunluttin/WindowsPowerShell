@@ -8,5 +8,6 @@ Import-Module Aliases
 Import-Module SkipHistory
 Import-Module PSGet
 Import-Module AddToPATH
+Import-Module Posh-Git
 
 Write-Host "Done"
