@@ -1,31 +1,42 @@
 
+
+$global:SuccessfulUrls = @();
+
+
 # Example
-# Get-WikipediaDescForRegionFromCsvFile "tradebc_community.csv"
+# dir .\tradebc_community.csv | % { Get-WikipediaDescriptionsFromCsvFile $_ }
 
-function Get-WikipediaDescForEachRegion ($file)
+function Get-WikipediaDescriptionsFromCsvFile
 {
-    write-host $file;
+    [CmdletBinding()]
+    param([Parameter(Mandatory=$True,ValueFromPipeline=$True)][System.IO.FileInfo]$file)
 
-    $index = 0;
+    $counter = 0;
     $timestamp = (get-date -f yyyy-MMM-dd-hhhh-mmmm);
-    $source = (get-item $file).BaseName;
+    $source = $file.BaseName;
     $destination = "wikipedia-descriptions-$source-$timestamp.csv";
 
     try
     {
         Import-Csv $file |             
-            Select-Object name | 
+            Select-Object name, originalid | 
             ForEach-Object {
-                Write-Host "Searching Wikipedia for" $_.name;
-                Get-WikipediaDescForRegion $_.name;
+                Write-Host "Retrieving Wikipedia description for" $_.name;
+                
+                $dto = Get-WikipediaDescriptionForRegion $_.name;                
+                $dto.OriginalId = $_.originalid;
+
+                return $dto;
+
             } | 
-            Select-Object RegionName, Url, Description, ShortDescription |
+            Select-Object OriginalId, RegionName, Url, Description, ShortDescription |
             ForEach-Object { 
+                
                 Export-Csv -InputObject $_ -Path $destination -Append -NoTypeInformation;
-                $index += 1;
+                $counter += 1;
             }
 
-       Write-Host "Wrote $($index) entries to $($destination)."
+       Write-Host "Wrote $($counter) entries to $($destination)."
     }
     catch
     {
@@ -33,21 +44,46 @@ function Get-WikipediaDescForEachRegion ($file)
     }
 }
 
-
 # Example
-# Get-WikipediaDescForRegion -region "vancouver"
+# Get-WikipediaDescriptionForRegion -region "vancouver"
 
-function Get-WikipediaDescForRegion ($region)
+function Get-WikipediaDescriptionForRegion ($region)
 {  
     try
     {
-        $url = Convert-RegionToWikipediaUrl $region
-        $description = Get-WikipediaDescForUrl $url
+        $counter = 0;
+        do 
+        {
+            $url = Convert-RegionToWikipediaUrl $region $counter            
+            if($url.Length -eq 0)
+            {
+                break;
+            }
+
+            $webResponse = Get-WikipediaWebResponseForUrl $url;
+            if($webResponse.StatusCode -eq 200)
+            {
+                break;
+            }
+
+            $counter += 1;
+            
+        } 
+        while($url.Length -gt 0 -and $webResponse.StatusCode -ne 200)
+        # keep trying to obtain a web response from Wikipedia
+        # while we do have a url and we don't have a proper web response
+
+
+        if($webResponse.StatusCode -eq 200) {
+            $description = Get-DescriptionFromWebResponse $webResponse;
+            $global:SuccessfulUrls += $url;
+        }
 
         # create hash table
         if($description)
         {
             $results = @{
+                OriginalId = ""
                 RegionName = $region
                 Url = $url
                 Description = $description
@@ -57,6 +93,7 @@ function Get-WikipediaDescForRegion ($region)
         else
         {
             $results = @{
+                OriginalId = ""
                 RegionName = $region
                 Url = $url
                 Description = "Not found in wikipedia"
@@ -76,94 +113,125 @@ function Get-WikipediaDescForRegion ($region)
 
 }
 
-function Convert-RegionToWikipediaUrl ($region)
+# TODO Keep track of URLs that we've already tried
+
+function Convert-RegionToWikipediaUrl ($region, $counter)
 {
-    try
-    {
-        $region = $region -replace " ", "_"
-        if($region -match "/")
-        {
-            $region = $region -replace "/", "-"
-            $region = "Regional_District_of_" + $region;
-        }
-        else
-        {
-            $region = $region + ",_British_Columbia";
-        }
-        $url = "http://en.wikipedia.org/wiki/$($region)";
-    }
-    catch
-    {
-        Write-Host $_.Exception.ToString()
-    }
+    $baseUrl = "http://en.wikipedia.org/wiki/";
+
+    # wikipedia replaces spaces with underscores
+    $region = $region -replace " ", "_"
+
+    <#  Wikipedia uses several styles of URL for our target regions.
+        We try several and accept whichever works first (sometimes these work because of redirects too.)
     
+        ./wiki/OUR_TARGET_REGION
+        ./wiki/OUR_TARGET_REGION,_British_Columbia
+        ./wiki/OUR_TARGET_REGION,(district_municipality)
+        ./wiki/OUR_TARGET_REGION,(city)
+        ./wiki/Regional_District_of_OUR_TARGET_REGION
+        ./wiki/OUR_TARGET_REGION_Regional_District
+        .wiki/OUR_TARGET_REGION_Regional_Municipality
+
+    #>
+
+    $modifiers = [Array]::CreateInstance("string", 9);
+    $modifiers[0] = ",_British_Columbia"
+    $modifiers[1] = "Regional_District_of_"
+    $modifiers[2] = "_Regional_District"
+    $modifiers[3] = [string]::Empty
+    $modifiers[4] = "_Regional_Municipality";
+    $modifiers[5] = "_(district_municipality)";
+    $modifiers[6] = "_(city)";
+
+    $modifiers[7] = $modifiers[0] + $modifiers[5];
+    $modifiers[8] = $modifiers[0] + $modifiers[6];
+
+    if($counter -eq $modifiers.Length)
+    {
+        $url = "";
+    }
+    else
+    {
+        switch($counter)
+        {
+            0 {
+                $url = $baseUrl + $region + $modifiers[$counter];
+            }
+            1 {
+                $url = $baseUrl + $modifiers[$counter] + $region;
+            }
+            2 {
+                $url = $baseUrl + $region + $modifiers[$counter];
+            }
+            3 {
+                $url = $baseUrl + $region;
+            }
+            4 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
+            5 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
+            6 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
+
+            7 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
+            8 {
+                $URL = $baseUrl + $region + $modifiers[$counter];
+            }
+
+        }
+    }
     return $url;
 }
 
-function Get-WikipediaDescForUrl ($url)
+function Get-WikipediaWebResponseForUrl ($url)
 {
-    $desc = "";
+    Write-Host "`tTrying $url" -NoNewline;
 
-    $regex = @{};
-    $regex.htmlTags = '<[^>]+>';
-    $regex.footnotes = '\[\d{0,3}\]';
-    $regex.firstNations = '\/[^\/]+\/\s';
-    $regex.parentheses = '\([^\)]+\),?\s';
-    $regex.htmlEntities = '&[^\s]*;';
-
+    $webResponse = @{};
     try
-    {
-        Write-Host "`tTrying" $url;
+    {       
+        $webResponse = Invoke-WebRequest $url;
 
-        $desc = Invoke-WebRequest $url | 
-            Select-Object -expand allelements | 
-            Where-Object { $_.id -eq "mw-content-text" } | 
-            Select-Object -expand innerHTML | 
-            ForEach-Object {  
-            
-                $html = Remove-TablesFromHtml $_;            
+        # the disambiguation page means "keep going"
+        $IsDisambiguation = ($webResponse.Images | where { $_.outerHtml -match "disambiguation" } | Measure-Object).Count -gt 0;
+        if($IsDisambiguation)
+        {
+            $webResponse = @{ StatusCode = 404 }
+        }
 
-                $i = $_.IndexOf("<P>"); 
-                $j = $_.IndexOf("</P>");                
-                
-                Remove-UnwantedStuffFromDesc ($_, $regex);
-            }   
-            
-        Write-Host "`tSuccess" 
     }
     catch [System.Net.WebException]
     {
-        $regionalPrefix = "Regional_District_of_";
-        $regionalSuffix = "_Regional_District";
-
-        if($url -match "_British_Columbia")
-        {
-            $url = $url -replace ",_British_Columbia";
-            $desc = Get-WikipediaDescForUrl $url;
-        }
-        elseif($url -notmatch $regionalPrefix)
-        {
-            $i = $url.LastIndexOf("/") + 1;
-            $url = $url.Insert($i, $regionalPrefix);
-            $desc = Get-WikipediaDescForUrl $url;
-        }
-        elseif($url -match $regionalPrefix)
-        {
-            $url = $url -replace $regionalPrefix;
-            $url = $url + $regionalSuffix;
-            $desc = Get-WikipediaDescForUrl $url;
-        }
-        else
-        {
-            Write-Host "`tBummer"
-        }
+        $webResponse.StatusCode = 404;
     }
     catch
     {
         Write-Host $_.Exception.ToString()
-    }
+    } 
+    Write-Host " ("$webResponse.StatusCode") ";
+    return $webResponse;
+}
 
-    return $desc;
+function Get-DescriptionFromWebResponse ($webResponse)
+{
+    $webResponse | 
+        Select-Object -expand allelements | 
+        Where-Object { $_.id -eq "mw-content-text" } | 
+        Select-Object -expand innerHTML | 
+        ForEach-Object {  
+            
+            $htmlWithoutTables = Remove-TablesFromHtml $_;            
+
+            $desc = Get-DescriptionParagraphsFromHtml $htmlWithoutTables;
+
+            Remove-UnwantedStuffFromDesc ($desc);
+        }
 }
 
 function Remove-TablesFromHtml ($theInput)
@@ -275,7 +343,47 @@ function Remove-TablesFromHtml ($theInput)
     }
 }
 
-function Remove-UnwantedStuffFromDesc ($desc, $regex)
+function Get-DescriptionParagraphsFromHtml ($html)
 {
-    $_.Substring($i, $j - $i) -replace $regex.htmlTags -replace $regex.footnotes -replace $regex.firstNations -replace $regex.parentheses -replace $regex.htmlEntities
+    $desc = "";
+    $openIndex = -1;
+    $closeIndex = -1;
+
+    $openTag = "<P>";
+    $closeTag = "</P>";
+
+    do {
+    
+        $openIndex = $html.IndexOf($openTag, $closeIndex + 1); 
+        $closeIndex = $html.IndexOf($closeTag, $openIndex + 1);
+
+        if($openIndex -ge 0 -and $closeIndex -ge 0)
+        {
+            $pElement = $html.Substring($openIndex, $closeIndex + $closeTag.Length - $openIndex);
+
+            # avoid non-description paragraphs
+            if($pElement -match 'id=coordinates')
+            {
+                continue;
+            }
+
+            $desc += $pElement;
+
+        }
+    }
+    while ($desc.Length -lt 400 -and $openIndex -ge 0 -and $closeIndex -ge 0)
+
+    return $desc;
+}
+
+function Remove-UnwantedStuffFromDesc ($desc)
+{
+    $regex = @{};
+    $regex.htmlTags = '<[^>]+>';
+    $regex.footnotes = '\[\d{0,3}\]';
+    $regex.firstNations = '\/[^\/]+\/\s';
+    $regex.parentheses = '\([^\)]+\),?\s';
+    $regex.htmlEntities = '&[^\s]*;';
+
+    $desc -replace $regex.htmlTags -replace $regex.footnotes -replace $regex.firstNations -replace $regex.parentheses -replace $regex.htmlEntities
 }
