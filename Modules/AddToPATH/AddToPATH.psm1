@@ -34,7 +34,7 @@ addToPath('C:\ProgramData\chocolatey\bin')
 addToPath('C:\Program Files (x86)\vim\vim74')
 addToPath('C:\WINDOWS\Microsoft.NET\Framework64\v4.0.30319') # MSBuild
 addToPath('C:\Users\shaun.luttin\Documents\KeePass-2.28') # KeePass portable
-
+addToPath('C:\Program Files (x86)\Git\bin');
 
 # add most other apps
 $appPaths | % { addToPath($_) }
